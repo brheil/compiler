@@ -214,7 +214,7 @@ function codeGen(AST) {
 			addtoheap("A2");
 			addtoheap("01");
 			
-			if(aNode.children[0].value === "BoolExpr") {
+			if(aNode.children[1].value === "BoolExpr") {
 			
 				evalBoolExpr(aNode.children[1]);
 				
@@ -388,8 +388,13 @@ function codeGen(AST) {
 				
 			}
 		}
-		else if(aNode.children[0].value === "String") {
+		else {
+			// comparing a variable to ... ?
+			// !btw your working here right now
+			if(aNode.children[1].value === "BoolExpr") {
 			
+				addtoheap(convertHex(idLookUP(aNode.children[0], currentScope).location));
+			}
 			
 		}
 	}
