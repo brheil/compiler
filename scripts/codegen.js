@@ -146,7 +146,10 @@ function codeGen(AST) {
 
 	function idLookUP(value, SSS) {
 		for(var x = 0; x < staticData.length; x++) {
+			
 			if(staticData[x].name === value && staticData[x].scope === SSS.name) {
+				// !static data log
+				//console.log(staticData[x]);
 				return staticData[x];
 			}
 		}
@@ -159,6 +162,8 @@ function codeGen(AST) {
 		var done = false;
 		
 		addtoheap("A9");
+		// !problem 1
+		//console.log(convertHex(aNode.children[inc].value));
 		addtoheap(convertHex(aNode.children[inc].value));
 		addtoheap("8D");
 		addtoheap("T0");
@@ -174,7 +179,8 @@ function codeGen(AST) {
 			}
 			else {
 				addtoheap("AD");
-				console.log(aNode.children[inc].value);
+				// !problem2
+				//console.log(aNode.children[inc].value);
 				addtoheap(idLookUP(aNode.children[inc].value, currentScope).location);
 				addtoheap("XX");
 			}
@@ -299,7 +305,10 @@ function codeGen(AST) {
 				
 				var beginSecond;
 				
-				for(var poop = 0; poop < aNode.children.length; poop++) {
+				// !problem3
+				//console.log(aNode.children[1].value);
+				
+				for(var poop = 0; poop < aNode.children.length - 1; poop++) {
 					if(!(aNode.children[poop].value === "+" ||
 							aNode.children[poop].value === "-")) {
 						if(!isNaN(aNode.children[poop + 1].value)) {
@@ -390,12 +399,95 @@ function codeGen(AST) {
 		}
 		else {
 			// comparing a variable to ... ?
-			// !btw your working here right now
-			if(aNode.children[1].value === "BoolExpr") {
 			
-				addtoheap(convertHex(idLookUP(aNode.children[0], currentScope).location));
+			if(idLookUP(aNode.children[0].value, currentScope).type === "boolean") {
+			
+				// put boolean stored at variable location in X
+				addtoheap("AE");
+				addtoheap(idLookUP(aNode.children[0].value, currentScope).location);
+				addtoheap("XX");
+
+				if(aNode.children[1].value === "BoolExpr") {
+									
+					evalBoolExpr(aNode.children[1]);
+					
+					// add false to temporary
+					addtoheap("A9");
+					addtoheap("00");
+					addtoheap("8D");
+					addtoheap("T0");
+					addtoheap("XX");
+					
+					// skip ahead 5 if Z
+					addtoheap("D0");
+					addtoheap("05");
+					
+					// add true to temporary
+					addtoheap("A9");
+					addtoheap("01");
+					addtoheap("8D");
+					addtoheap("T0");
+					addtoheap("XX");
+					
+					// compare
+					addtoheap("EC");
+					addtoheap("T0");
+					addtoheap("XX");
+				}
+				else if(aNode.children[1].value === "true") {
+				
+					// put true into temp
+					addtoheap("A9");
+					addtoheap("01");
+					addtoheap("8D");
+					addtoheap("T0");
+					addtoheap("XX");
+					
+					// compare
+					addtoheap("EC");
+					addtoheap("T0");
+					addtoheap("XX");
+					
+				}
+				else {
+				
+					// put false into temp
+					addtoheap("A9");
+					addtoheap("00");
+					addtoheap("8D");
+					addtoheap("T0");
+					addtoheap("XX");
+					
+					// compare
+					addtoheap("EC");
+					addtoheap("T0");
+					addtoheap("XX");
+					
+				}
 			}
-			
+			else {
+				
+				if(aNode.children.length === 2) {
+					// compare variable to a number
+					
+					addtoheap("A2");
+					addtoheap(convertHex(aNode.children[1].value));
+					addtoheap("EC");
+					addtoheap(idLookUP(aNode.children[0].value, currentScope).location);
+					addtoheap("XX");
+				}
+				else {
+					// 2nd entry is int expr
+					evalIntExpr(aNode, 1);
+					
+					addtoheap("AE");
+					addtoheap(idLookUP(aNode.children[0].value, currentScope).location);
+					addtoheap("XX");
+					addtoheap("EC");
+					addtoheap("T0");
+					addtoheap("XX");
+				}
+			}
 		}
 	}
 
@@ -453,26 +545,22 @@ function codeGen(AST) {
 			endScope();
 		}
 		if(aNode.value === "IS") {
-			if(aNode.children[0].value !== "BoolExpr") {
-				// put something
-				console.log("seriously fuck off code kit");
-			}
-			else {
-				// recursively compare shit (?)
-				evalBoolExpr(aNode.children[0]);
+			// solve dat boolexpr
+			
+			evalBoolExpr(aNode.children[0]);
+			
+			addtoheap("D0");
+			
+			var start = heapCounter;
+			var jname = tempJump();
+			addtoheap(jname);
+			genStatement(aNode.children[1]);
+			
+			var end = heapCounter;
+			
+			newJump(jname, end - start);
+			
 				
-				addtoheap("D0");
-				
-				var start = heapCounter;
-				var jname = tempJump();
-				addtoheap(jname);
-				genStatement(aNode.children[1]);
-				
-				var end = heapCounter;
-				
-				newJump(jname, end - start);
-				
-			}
 		}
 		if(aNode.value === "PS") {
 			if(aNode.children[0].value === "String") {
@@ -522,11 +610,18 @@ function codeGen(AST) {
 		var endOfCode = 0;
 
 		for(var c = 0; c < 96; c++) {
-			if(codeList[c] === "00") {
+			if(codeList[c] === undefined) {
 				endOfCode = c + 1;
 				break;
 			}
 		}
+		
+		for(var p = 0; p < 96; p++) {
+			if(codeList[p] === undefined) {
+				codeList[p] = "00";
+			}
+		}
+		
 		for(var d = 0; d < staticData.length + 1; d++) {
 			for(var b = 0; b < 96; b++) {
 				if(codeList[b].charAt(0) === "T") {
@@ -540,7 +635,7 @@ function codeGen(AST) {
 		}
 		for(var e = 0; e < 96; e++) {
 			if(codeList[e].charAt(0) === "J") {
-				codeList[e] = jumpData[codeList[e].charAt(1)].distance;
+				codeList[e] = convertHex(jumpData[codeList[e].charAt(1)].distance);
 			}
 		}
 	}
@@ -549,11 +644,6 @@ function codeGen(AST) {
 		genStatement(mahtree);
 		putMessage("Generating code ...");
 		putMessage("");
-		for(var p = 0; p < 96; p++) {
-			if(codeList[p] === undefined) {
-				codeList[p] = "00";
-			}
-		}
 		backPatch();
 		for(var x = 0; x < 12; x++) {
 			putMessage(codeList[x * 8] + " " + codeList[x * 8 + 1] + " " + codeList[x * 8 + 2] +

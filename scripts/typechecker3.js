@@ -426,7 +426,7 @@ function typeChecker(superRootCST) {
 			else if(myNode.children[1].value === "BoolExpr") {
 				putMessage("Checked boolean vs boolean, approved!");
 				typeCheckBoolExpr(myNode.children[0]);
-				typeCheckBookExpr(myNode.children[1]);
+				typeCheckBoolExpr(myNode.children[1]);
 			}
 			else if(isNaN(myNode.children[1].value)) {
 				if(symTabLookUp(symbolTable, myNode.children[1].value, daScope).value.type === "boolean") {
