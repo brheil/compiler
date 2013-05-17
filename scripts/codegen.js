@@ -148,8 +148,6 @@ function codeGen(AST) {
 		for(var x = 0; x < staticData.length; x++) {
 			
 			if(staticData[x].name === value && staticData[x].scope === SSS.name) {
-				// !static data log
-				//console.log(staticData[x]);
 				return staticData[x];
 			}
 		}
@@ -162,8 +160,6 @@ function codeGen(AST) {
 		var done = false;
 		
 		addtoheap("A9");
-		// !problem 1
-		//console.log(convertHex(aNode.children[inc].value));
 		addtoheap(convertHex(aNode.children[inc].value));
 		addtoheap("8D");
 		addtoheap("T0");
@@ -179,8 +175,6 @@ function codeGen(AST) {
 			}
 			else {
 				addtoheap("AD");
-				// !problem2
-				//console.log(aNode.children[inc].value);
 				addtoheap(idLookUP(aNode.children[inc].value, currentScope).location);
 				addtoheap("XX");
 			}
@@ -245,7 +239,7 @@ function codeGen(AST) {
 				
 			}
 			
-			else {
+			else if(aNode.children[1].value.length > 1) {
 				if(aNode.children[1].value === "true") {
 					
 					addtoheap("A9");
@@ -269,6 +263,13 @@ function codeGen(AST) {
 				addtoheap("T0");
 				addtoheap("XX");
 
+			}
+			else {
+				
+				addtoheap("EC");
+				addtoheap(idLookUP(aNode.children[1].value, currentScope));
+				addtoheap("XX");
+				
 			}
 		}
 		else if(!isNaN(aNode.children[0].value)) {
@@ -305,24 +306,23 @@ function codeGen(AST) {
 				
 				var beginSecond;
 				
-				// !problem3
-				//console.log(aNode.children[1].value);
-				
-				for(var poop = 0; poop < aNode.children.length - 1; poop++) {
+				for(var poop = 0; poop < aNode.children.length; poop++) {
 					if(!(aNode.children[poop].value === "+" ||
 							aNode.children[poop].value === "-")) {
-						if(!isNaN(aNode.children[poop + 1].value)) {
+						if(!(aNode.children[poop + 1].value === "+" ||
+								aNode.children[poop + 1].value === "-")) {
 							beginSecond = poop + 1;
 							break;
 						}
 					}
 				}
+				
 				if(aNode.children.length === beginSecond + 1) {
 					// 2nd entry is a num
 					evalIntExpr(aNode, 0);
 					
 					addtoheap("A2");
-					addtoheap(convertHex(aNode.children[beginSecond]));
+					addtoheap(convertHex(aNode.children[beginSecond].value));
 					addtoheap("EC");
 					addtoheap("T0");
 					addtoheap("XX");
