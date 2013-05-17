@@ -443,6 +443,12 @@ function parse() {
 						parseIndex = parseIndex + 1;
 						newNode(currentNode, "Expr");
 						parseExpr(currentNode);
+					}
+					else {
+						putMessage("Error! Found invalid token: \"" + tokens[parseIndex].value +
+							"\" (line " + tokens[parseIndex].line + ")");
+						errorBool = true;
+					}
 						if(!errorBool) {
 							if(tokens[parseIndex].value === ")") {
 								// found end of bool expr
@@ -450,8 +456,12 @@ function parse() {
 								parseIndex = parseIndex + 1;
 								currentNode = returnNode;
 							}
+							else {
+								putMessage("Error! Found invalid token: \"" + tokens[parseIndex].value +
+											"\" (line " + tokens[parseIndex].line + ")");
+								errorBool = true;
+							}
 						}
-					}
 				}
 			}
 			else if(tokens[parseIndex].type === "bool") {

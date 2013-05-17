@@ -214,6 +214,9 @@ function codeGen(AST) {
 			addtoheap("A2");
 			addtoheap("01");
 			
+			// ((true == false) == ((true == true) == true)
+			// !problem
+			
 			if(aNode.children[1].value === "BoolExpr") {
 			
 				evalBoolExpr(aNode.children[1]);
@@ -267,7 +270,7 @@ function codeGen(AST) {
 			else {
 				
 				addtoheap("EC");
-				addtoheap(idLookUP(aNode.children[1].value, currentScope));
+				addtoheap(idLookUP(aNode.children[1].value, currentScope).location);
 				addtoheap("XX");
 				
 			}
@@ -342,6 +345,15 @@ function codeGen(AST) {
 					addtoheap("T0");
 					addtoheap("XX");
 				}
+			}
+			else {
+				
+				addtoheap("A2");
+				addtoheap(convertHex(aNode.children[0].value));
+				addtoheap("EC");
+				addtoheap(idLookUP(aNode.children[1].value, currentScope).location);
+				addtoheap("XX");
+							
 			}
 		}
 		else if(aNode.children[0].value === "true" ||
@@ -535,6 +547,38 @@ function codeGen(AST) {
 				addtoheap(idLookUP(aNode.children[0].value, currentScope).location);
 				addtoheap("XX");
 			}
+			else if(aNode.children[1].value === "BoolExpr") {
+				
+				evalBoolExpr(aNode.children[1]);
+				
+				addtoheap("A9");
+				addtoheap("00");
+				addtoheap("D0");
+				addtoheap("02");
+				addtoheap("A9");
+				addtoheap("01");
+				
+				addtoheap("8D");
+				addtoheap(idLookUP(aNode.children[0].value, currentScope).location);
+				addtoheap("XX");
+			}
+			else {
+				if(aNode.children[1].value === "true") {
+					addtoheap("A9");
+					addtoheap("01");
+					addtoheap("8D");
+					addtoheap(idLookUP(aNode.children[0].value, currentScope).location);
+					addtoheap("XX");
+				}
+				else {
+					addtoheap("A9");
+					addtoheap("00");
+					addtoheap("8D");
+					addtoheap(idLookUP(aNode.children[0].value, currentScope).location);
+					addtoheap("XX");
+
+				}
+			}
 		}
 		if(aNode.value === "SL") {
 			newScope();
@@ -551,12 +595,16 @@ function codeGen(AST) {
 			
 			addtoheap("D0");
 			
+			// !here is problem
+			
 			var start = heapCounter;
 			var jname = tempJump();
 			addtoheap(jname);
 			genStatement(aNode.children[1]);
 			
-			var end = heapCounter;
+			var end = heapCounter - 1;
+			
+			//console.log(end + " - " + start);
 			
 			newJump(jname, end - start);
 			
