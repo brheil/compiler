@@ -24,7 +24,7 @@ function codeGen(AST) {
 
 	var heapCounter = 0;
 
-	var stackCounter = 95;
+	var stackCounter = 255;
 
 	var erb = false;
 
@@ -626,15 +626,53 @@ function codeGen(AST) {
 				// sys call
 				addtoheap("FF");
 			}
-			else if(aNode.children[0].value === "true" ||
-				aNode.children[0].value === "false" ||
-				aNode.children[0].value === "BoolExpr") {
-					console.log("fuck you and your empty block");
+			else if(aNode.children[0].value === "BoolExpr") {
 				// generate boolean value
+				evalBoolExpr(aNode.children[0]);
+				addtoheap("A0");
+				addtoheap("00");
+				addtoheap("D0");
+				addtoheap("02");
+				addtoheap("A0");
+				addtoheap("01");
+				
+				addtoheap("A2");
+				addtoheap("01");
+				addtoheap("FF");
 			}
-			//else if(!isNaN(aNode.children[0].value) || aNode.children[1].value === "+" || "-") {
+			else if(aNode.children[0].value === "true" ||
+					aNode.children[0].value === "false") {
+				// print boolean
+				addtoheap("A2");
+				addtoheap("01");
+				
+				addtoheap("A0");
+				if(aNode.children[0].value === "true") {
+					addtoheap("01");
+				}
+				else {
+					addtoheap("00");
+				}
+				addtoheap("FF");
+			}
+			else if(!isNaN(aNode.children[0].value) && aNode.children.length > 1) {
 				// generate int expr
-			//}
+				evalBoolExpr(aNode, 0);
+				addtoheap("A2");
+				addtoheap("01");
+				addtoheap("AC");
+				addtoheap("T0");
+				addtoheap("XX");
+				addtoheap("FF");
+				
+			}
+			else if(!isNan(aNode.children[0].value)) {
+				addtoheap("A2");
+				addtoheap("01");
+				addtoheap("A0");
+				addtoheap(convertHex(aNode.children[0].value));
+				addtoheap("FF");
+			}
 			else {
 				addtoheap("AC");
 				addtoheap(idLookUP(aNode.children[0].value, currentScope).location);
@@ -657,21 +695,21 @@ function codeGen(AST) {
 
 		var endOfCode = 0;
 
-		for(var c = 0; c < 96; c++) {
+		for(var c = 0; c < 256; c++) {
 			if(codeList[c] === undefined) {
 				endOfCode = c + 1;
 				break;
 			}
 		}
 		
-		for(var p = 0; p < 96; p++) {
+		for(var p = 0; p < 256; p++) {
 			if(codeList[p] === undefined) {
 				codeList[p] = "00";
 			}
 		}
 		
 		for(var d = 0; d < staticData.length + 1; d++) {
-			for(var b = 0; b < 96; b++) {
+			for(var b = 0; b < 256; b++) {
 				if(codeList[b].charAt(0) === "T") {
 					if(codeList[b].charAt(1) === d + "") {
 						codeList[b] = convertHex(endOfCode);
@@ -681,7 +719,7 @@ function codeGen(AST) {
 			}
 			endOfCode = endOfCode + 1;
 		}
-		for(var e = 0; e < 96; e++) {
+		for(var e = 0; e < 256; e++) {
 			if(codeList[e].charAt(0) === "J") {
 				codeList[e] = convertHex(jumpData[codeList[e].charAt(1)].distance);
 			}
@@ -693,7 +731,7 @@ function codeGen(AST) {
 		putMessage("Generating code ...");
 		putMessage("");
 		backPatch();
-		for(var x = 0; x < 12; x++) {
+		for(var x = 0; x < 32; x++) {
 			putMessage(codeList[x * 8] + " " + codeList[x * 8 + 1] + " " + codeList[x * 8 + 2] +
 						" " + codeList[x * 8 + 3] + " " + codeList[x * 8 + 4] + " " + codeList[x * 8 + 5] +
 						" " + codeList[x * 8 + 6] + " " + codeList[x * 8 + 7]);
